@@ -1,5 +1,6 @@
 package com.vastobb.alpmegateway.net
 
+import com.vastobb.alpmegateway.AppContainer
 import com.vastobb.alpmegateway.data.ApiKeyConfig
 import com.vastobb.alpmegateway.data.GatewaySettings
 import com.vastobb.alpmegateway.data.KeyRuntime

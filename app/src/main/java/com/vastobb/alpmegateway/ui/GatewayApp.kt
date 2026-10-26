@@ -293,7 +293,7 @@ private fun GatewayTopBar(
                 ),
             ) {
                 Icon(
-                    icon = if (isRunning) Icons.Rounded.Stop else Icons.Rounded.PlayArrow,
+                    imageVector = if (isRunning) Icons.Rounded.Stop else Icons.Rounded.PlayArrow,
                     contentDescription = if (isRunning) "Stop gateway" else "Start gateway",
                     modifier = Modifier.size(20.dp),
                 )
