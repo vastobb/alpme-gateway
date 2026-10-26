@@ -115,8 +115,9 @@ fun LogsScreen(
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             LogFilter.entries.forEach { item ->
+                val countSuffix = if (item == LogFilter.ALL) " ${logs.size}" else ""
                 FilterChip(
-                    label = "${item.label}${if (item == LogFilter.ALL) " ${logs.size}" else ""}",
+                    label = item.label + countSuffix,
                     selected = filter == item,
                     onClick = { filter = item },
                 )

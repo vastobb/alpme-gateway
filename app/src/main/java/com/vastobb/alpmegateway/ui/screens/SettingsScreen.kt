@@ -113,7 +113,7 @@ fun SettingsScreen(
             Spacer(Modifier.height(12.dp))
             ThemeOption(
                 name = "Midnight Slate",
-                description = "Cool graphite with mint accents",
+                description = "Cool graphite with mint status accents",
                 mode = AppThemeMode.MIDNIGHT,
                 appBg = MidnightSlate.appBg,
                 panelBg = MidnightSlate.panelBg,
@@ -125,7 +125,7 @@ fun SettingsScreen(
             Spacer(Modifier.height(7.dp))
             ThemeOption(
                 name = "Graphite",
-                description = "Neutral monochrome with lime accents",
+                description = "Pure neutral monochrome",
                 mode = AppThemeMode.GRAPHITE,
                 appBg = Graphite.appBg,
                 panelBg = Graphite.panelBg,

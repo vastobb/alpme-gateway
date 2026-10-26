@@ -19,7 +19,7 @@ data class GatewaySettings(
     val universalModel: String = "deepseek-v4.1-flash",
     val forceUniversalModel: Boolean = true,
     val enableFallback: Boolean = true,
-    val fallbackModel: String = "deepseek-v4.1-flash",
+    val fallbackModel: String = "glm-5.3-flash",
     val routingStrategy: RoutingStrategy = RoutingStrategy.ROUND_ROBIN,
     val retryCount: Int = 2,
     val timeoutSeconds: Int = 300,

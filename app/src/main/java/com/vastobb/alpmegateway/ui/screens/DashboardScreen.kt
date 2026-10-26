@@ -444,7 +444,7 @@ private fun KeyMiniRow(row: KeyRow, onClick: () -> Unit) {
             )
         }
         Text(
-            text = "${row.runtime.requestCount} req",
+            text = "${row.runtime.requestCount} tries",
             style = MaterialTheme.typography.labelSmall,
             color = palette.textSecondary,
         )
@@ -558,7 +558,11 @@ fun ConnectSheet(
                 "apiKey": "$safeToken"
               },
               "models": {
-                "auto": { "name": "Alpme Auto" }
+                "auto": {
+                  "name": "Alpme Auto",
+                  "tool_call": true,
+                  "limit": { "context": 1050000, "output": 128000 }
+                }
               }
             }
           }

@@ -364,7 +364,7 @@ private fun KeyCard(
                 modifier = Modifier.weight(1f, fill = false),
             )
             if (row.runtime.requestCount > 0) {
-                Pill(text = "${row.runtime.requestCount} req", color = palette.textSecondary)
+                Pill(text = "${row.runtime.requestCount} tries", color = palette.textSecondary)
             }
             if (row.runtime.errorCount > 0) {
                 Pill(text = "${row.runtime.errorCount} err", color = palette.error)
@@ -447,6 +447,7 @@ private fun KeyCard(
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = if (testResult.ok) palette.success else palette.error,
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
@@ -561,9 +562,13 @@ private fun KeyEditSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Use universal model", style = MaterialTheme.typography.titleSmall, color = palette.textPrimary)
+                    Text("Use routing default", style = MaterialTheme.typography.titleSmall, color = palette.textPrimary)
                     Text(
-                        text = settings.universalModel.ifBlank { "No universal model set" },
+                        text = if (settings.universalModel.isBlank()) {
+                            "No per-key override · auto"
+                        } else {
+                            "No per-key override · ${settings.universalModel}"
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.textSecondary,
                     )

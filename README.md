@@ -5,6 +5,7 @@ A local, OpenAI-compatible gateway for [Alpme](https://alpme.com), packaged as a
 Alpme Gateway runs a small HTTP server on your phone, holds multiple Alpme API keys, and exposes one stable endpoint to OpenCode, Cursor, scripts, or any OpenAI-compatible client. It rewrites the `User-Agent` Alpme expects, streams responses, rotates keys, retries overload errors, and shows every request in a live log.
 
 <p align="center">
+  <a href="https://github.com/vastobb/alpme-gateway/actions/workflows/android.yml"><img alt="Android build" src="https://github.com/vastobb/alpme-gateway/actions/workflows/android.yml/badge.svg" /></a>
   <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.1-7F52FF?style=flat-square" />
   <img alt="Jetpack Compose" src="https://img.shields.io/badge/Compose-Material%203-4285F4?style=flat-square" />
   <img alt="Min SDK" src="https://img.shields.io/badge/minSdk-26-3DDC84?style=flat-square" />
@@ -17,7 +18,7 @@ Alpme's API is OpenAI-compatible, but it can reject generic clients and intermit
 - Sends `User-Agent: Alpme/1.0.0`, which Alpme accepts.
 - Supports unlimited keys, each with an optional model override.
 - Exposes a universal model plus a stable `/v1` endpoint.
-- Retries `429/500/502/503/504` across keys with short exponential backoff.
+- Retries `404/429/500/502/503/504` across keys with short exponential backoff.
 - Optionally falls back to another model when Alpme is overloaded.
 - Streams SSE responses straight through.
 - Keeps request metadata in a live, in-memory log.
@@ -71,12 +72,18 @@ Add a provider to `~/.config/opencode/opencode.json`:
         "apiKey": "sk_gw_your_token"
       },
       "models": {
-        "auto": { "name": "Alpme Auto" }
+        "auto": {
+          "name": "Alpme Auto",
+          "tool_call": true,
+          "limit": { "context": 1050000, "output": 128000 }
+        }
       }
     }
   }
 }
 ```
+
+Some OpenCode builds use the V2 `providers` shape. In that case, move the same `npm` / `options` / `models` block under `providers`.
 
 Use the LAN address shown in the app. The phone and computer must be on the same Wi-Fi, and **Allow LAN access** must be enabled.
 
@@ -110,7 +117,7 @@ Fallback responses include:
 
 ```http
 X-Alpme-Key: Personal
-X-Alpme-Model: deepseek-v4.1-flash
+X-Alpme-Model: glm-5.3-flash
 X-Alpme-Fallback: true
 ```
 

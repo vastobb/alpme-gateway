@@ -94,6 +94,8 @@ fun RoutingScreen(
     var portText by remember(settings.port) { mutableStateOf(settings.port.toString()) }
     var tokenEditing by remember(settings.accessToken) { mutableStateOf(false) }
     var tokenText by remember(settings.accessToken) { mutableStateOf(settings.accessToken) }
+    val attemptNoun = if (settings.retryCount == 0) "attempt" else "attempts"
+    val bindLabel = if (settings.bindLan) "all interfaces" else "localhost"
 
     Column(
         modifier = Modifier
@@ -144,7 +146,7 @@ fun RoutingScreen(
                         color = palette.textPrimary,
                     )
                     Text(
-                        "Used by keys that do not have their own model.",
+                        "Used by keys without an override, and for `auto` requests.",
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.textSecondary,
                     )
@@ -163,7 +165,7 @@ fun RoutingScreen(
             Spacer(Modifier.height(12.dp))
             SettingSwitchRow(
                 title = "Force universal model",
-                description = "Rewrite every request to the universal model, even if the client asks for another one.",
+                description = "Rewrite every request to the universal model unless the key has its own model.",
                 checked = settings.forceUniversalModel,
                 onCheckedChange = onForceUniversal,
             )
@@ -264,7 +266,7 @@ fun RoutingScreen(
                         color = palette.textPrimary,
                     )
                     Text(
-                        "${settings.retryCount + 1} attempt${if (settings.retryCount == 0) "" else "s"} with key rotation",
+                        "${settings.retryCount + 1} $attemptNoun with key rotation",
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.textSecondary,
                     )
@@ -325,7 +327,7 @@ fun RoutingScreen(
                         color = palette.textPrimary,
                     )
                     Text(
-                        "Listening on ${if (settings.bindLan) "all interfaces" else "localhost"}",
+                        "Listening on $bindLabel",
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.textSecondary,
                     )

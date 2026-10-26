@@ -11,10 +11,14 @@ import java.util.Base64
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 private val Context.gatewayDataStore by preferencesDataStore(name = "gateway_settings")
 
 class SettingsRepository(private val context: Context) {
+
+    private val tokenMutex = Mutex()
 
     private object Keys {
         val PORT = intPreferencesKey("port")
@@ -40,7 +44,7 @@ class SettingsRepository(private val context: Context) {
             universalModel = prefs[Keys.UNIVERSAL_MODEL] ?: "deepseek-v4.1-flash",
             forceUniversalModel = prefs[Keys.FORCE_UNIVERSAL] ?: true,
             enableFallback = prefs[Keys.ENABLE_FALLBACK] ?: true,
-            fallbackModel = prefs[Keys.FALLBACK_MODEL] ?: "deepseek-v4.1-flash",
+            fallbackModel = prefs[Keys.FALLBACK_MODEL] ?: "glm-5.3-flash",
             routingStrategy = prefs[Keys.ROUTING]
                 ?.let { runCatching { RoutingStrategy.valueOf(it) }.getOrNull() }
                 ?: RoutingStrategy.ROUND_ROBIN,
@@ -57,8 +61,15 @@ class SettingsRepository(private val context: Context) {
     suspend fun current(): GatewaySettings = settings.first()
 
     suspend fun ensureAccessToken() {
-        val current = current()
-        if (current.accessToken.isBlank()) {
+        tokenMutex.withLock {
+            if (current().accessToken.isBlank()) {
+                update { it.copy(accessToken = newToken()) }
+            }
+        }
+    }
+
+    suspend fun regenerateAccessToken() {
+        tokenMutex.withLock {
             update { it.copy(accessToken = newToken()) }
         }
     }
@@ -72,7 +83,7 @@ class SettingsRepository(private val context: Context) {
                 universalModel = prefs[Keys.UNIVERSAL_MODEL] ?: "deepseek-v4.1-flash",
                 forceUniversalModel = prefs[Keys.FORCE_UNIVERSAL] ?: true,
                 enableFallback = prefs[Keys.ENABLE_FALLBACK] ?: true,
-                fallbackModel = prefs[Keys.FALLBACK_MODEL] ?: "deepseek-v4.1-flash",
+                fallbackModel = prefs[Keys.FALLBACK_MODEL] ?: "glm-5.3-flash",
                 routingStrategy = prefs[Keys.ROUTING]
                     ?.let { runCatching { RoutingStrategy.valueOf(it) }.getOrNull() }
                     ?: RoutingStrategy.ROUND_ROBIN,

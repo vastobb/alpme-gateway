@@ -11,7 +11,14 @@ object NetworkUtils {
         return runCatching {
             Collections.list(NetworkInterface.getNetworkInterfaces())
                 .asSequence()
-                .filter { it.isUp && !it.isLoopback }
+                .filter { nic ->
+                    nic.isUp &&
+                        !nic.isLoopback &&
+                        !nic.name.startsWith("rmnet") &&
+                        !nic.name.startsWith("ccmni") &&
+                        !nic.name.startsWith("tun") &&
+                        !nic.name.startsWith("ppp")
+                }
                 .sortedBy { nic ->
                     when {
                         nic.name.startsWith("wlan") -> 0

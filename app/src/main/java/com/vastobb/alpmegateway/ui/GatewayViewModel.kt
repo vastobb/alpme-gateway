@@ -146,7 +146,7 @@ class GatewayViewModel(private val container: AppContainer) : ViewModel() {
 
     fun regenerateToken() {
         viewModelScope.launch {
-            container.settingsRepository.update { it.copy(accessToken = container.settingsRepository.newToken()) }
+            container.settingsRepository.regenerateAccessToken()
         }
     }
 
@@ -162,7 +162,10 @@ class GatewayViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             container.settingsRepository.update(transform)
             if (restart && container.proxyEngine.isRunning.value) {
-                container.proxyEngine.restart(container.settingsRepository.current())
+                val restarted = withContext(Dispatchers.IO) {
+                    container.proxyEngine.restart(container.settingsRepository.current())
+                }
+                if (!restarted) ProxyService.stop(container.appContext)
             }
         }
     }

@@ -203,8 +203,27 @@ class ProxyEngine(private val container: AppContainer) {
                 return error(400, "Request body must be valid JSON.", "invalid_json", cors)
             }
 
+        val requestedModel = runCatching {
+            body["model"]?.jsonPrimitive?.contentOrNull
+        }.getOrNull().orEmpty()
+        val stream = runCatching {
+            body["stream"]?.jsonPrimitive?.booleanOrNull
+        }.getOrNull() ?: false
+
         val enabledKeys = container.keyStore.keys.value.filter { it.enabled && it.key.isNotBlank() }
         if (enabledKeys.isEmpty()) {
+            container.logStore.add(
+                RequestLog(
+                    keyName = "No key",
+                    requestedModel = requestedModel,
+                    resolvedModel = "—",
+                    status = 503,
+                    latencyMs = 0,
+                    stream = stream,
+                    path = "/v1/chat/completions",
+                    error = "No enabled Alpme keys",
+                ),
+            )
             return error(
                 status = 503,
                 message = "No enabled Alpme keys. Add at least one key in the app.",
@@ -213,12 +232,6 @@ class ProxyEngine(private val container: AppContainer) {
             )
         }
 
-        val requestedModel = runCatching {
-            body["model"]?.jsonPrimitive?.contentOrNull
-        }.getOrNull().orEmpty()
-        val stream = runCatching {
-            body["stream"]?.jsonPrimitive?.booleanOrNull
-        }.getOrNull() ?: false
         val orderedKeys = orderKeys(enabledKeys, settings)
         val maxAttempts = (settings.retryCount + 1).coerceAtLeast(1)
         val started = System.currentTimeMillis()
@@ -308,7 +321,8 @@ class ProxyEngine(private val container: AppContainer) {
                         recordRuntime(key, result.status, latency, success = false)
                     }
                 }
-                if (result.status !in RETRYABLE_STATUS) break
+                val retryNextKey = result.status in RETRYABLE_STATUS || result.status in AUTH_STATUS
+                if (!retryNextKey) break
                 if (attemptIndex < attemptsAllowed && result.status in RETRYABLE_STATUS) {
                     val backoffMs = when (result.status) {
                         503, 429 -> minOf(750L * (1L shl (attemptIndex - 1).coerceAtMost(3)), 4_000L)
@@ -424,10 +438,18 @@ class ProxyEngine(private val container: AppContainer) {
         if (settings.forceUniversalModel && settings.universalModel.isNotBlank()) {
             return settings.universalModel
         }
-        if (requestedModel.isBlank() || requestedModel == "auto" || requestedModel == "universal") {
+        if (isAutoAlias(requestedModel)) {
             return settings.universalModel.ifBlank { DEFAULT_MODEL }
         }
         return requestedModel
+    }
+
+    private fun isAutoAlias(model: String): Boolean {
+        return model.isBlank() ||
+            model == "auto" ||
+            model == "universal" ||
+            model.endsWith("/auto") ||
+            model.endsWith("/universal")
     }
 
     private fun withModel(body: JsonObject, model: String): JsonObject {
@@ -495,7 +517,14 @@ class ProxyEngine(private val container: AppContainer) {
     private fun extractError(body: String): String? {
         return runCatching {
             val root = json.parseToJsonElement(body).jsonObject
-            root["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+            val errorElement = root["error"]
+            val nested = (errorElement as? JsonObject)
+                ?.get("message")
+                ?.jsonPrimitive
+                ?.contentOrNull
+            val direct = (errorElement as? JsonPrimitive)?.contentOrNull
+            val top = (root["message"] as? JsonPrimitive)?.contentOrNull
+            nested ?: top ?: direct
         }.getOrNull()
     }
 
@@ -562,6 +591,7 @@ class ProxyEngine(private val container: AppContainer) {
 
     private companion object {
         const val DEFAULT_MODEL = "deepseek-v4.1-flash"
-        val RETRYABLE_STATUS = setOf(429, 500, 502, 503, 504)
+        val RETRYABLE_STATUS = setOf(404, 429, 500, 502, 503, 504)
+        val AUTH_STATUS = setOf(401, 403)
     }
 }
