@@ -15,6 +15,7 @@ data class RequestLog(
     val attempts: Int = 1,
     val fallback: Boolean = false,
     val error: String? = null,
+    val attemptDetails: String? = null,
 ) {
     val isSuccess: Boolean get() = status in 200..299
 }

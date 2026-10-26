@@ -241,6 +241,7 @@ class ProxyEngine(private val container: AppContainer) {
         var lastModel = requestedModel
         var attemptNo = 0
         var usedFallback = false
+        val attemptDetails = mutableListOf<String>()
 
         fun attempt(
             keys: List<ApiKeyConfig>,
@@ -256,6 +257,7 @@ class ProxyEngine(private val container: AppContainer) {
                 lastKey = key
                 lastModel = resolved
                 val payload = withModel(body, resolved).toString()
+                val attemptStarted = System.currentTimeMillis()
                 val result = callUpstream(
                     key = key,
                     payload = payload,
@@ -263,11 +265,28 @@ class ProxyEngine(private val container: AppContainer) {
                     settings = settings,
                 )
                 val latency = System.currentTimeMillis() - started
+                val attemptLatency = System.currentTimeMillis() - attemptStarted
+                attemptDetails += buildString {
+                    append("$attemptNo. ")
+                    append(key.name)
+                    append(" · ")
+                    append(resolved)
+                    append(" · HTTP ")
+                    append(result.status)
+                    append(" · ")
+                    append(attemptLatency)
+                    append("ms")
+                    if (forceModel != null) append(" · fallback")
+                    if (result.response == null && !result.error.isNullOrBlank()) {
+                        append(" · ")
+                        append(result.error)
+                    }
+                }
                 lastStatus = result.status
                 val upstream = result.response
                 when {
                     upstream != null && upstream.isSuccessful -> {
-                        recordRuntime(key, result.status, latency, success = true)
+                        recordRuntime(key, result.status, attemptLatency, success = true)
                         val upstreamBody = upstream.body
                         if (stream && upstreamBody != null) {
                             val response = NanoHTTPD.newChunkedResponse(
@@ -289,6 +308,7 @@ class ProxyEngine(private val container: AppContainer) {
                                 stream = true,
                                 attempts = attemptNo,
                                 fallback = usedFallback,
+                                attemptDetails = attemptDetails.joinToString("\n"),
                             )
                             return response
                         }
@@ -307,6 +327,7 @@ class ProxyEngine(private val container: AppContainer) {
                             stream = false,
                             attempts = attemptNo,
                             fallback = usedFallback,
+                            attemptDetails = attemptDetails.joinToString("\n"),
                         )
                         return response
                     }
@@ -314,11 +335,11 @@ class ProxyEngine(private val container: AppContainer) {
                         val errorBody = runCatching { upstream.body?.string().orEmpty() }.getOrDefault("")
                         lastError = extractError(errorBody) ?: "HTTP ${result.status}"
                         upstream.close()
-                        recordRuntime(key, result.status, latency, success = false)
+                        recordRuntime(key, result.status, attemptLatency, success = false)
                     }
                     else -> {
                         lastError = result.error ?: "Network error"
-                        recordRuntime(key, result.status, latency, success = false)
+                        recordRuntime(key, result.status, attemptLatency, success = false)
                     }
                 }
                 val retryNextKey = result.status in RETRYABLE_STATUS || result.status in AUTH_STATUS
@@ -364,6 +385,7 @@ class ProxyEngine(private val container: AppContainer) {
                 attempts = attemptNo,
                 fallback = usedFallback,
                 error = lastError,
+                attemptDetails = attemptDetails.joinToString("\n"),
             )
         }
         return error(
@@ -484,6 +506,7 @@ class ProxyEngine(private val container: AppContainer) {
         attempts: Int,
         fallback: Boolean,
         error: String? = null,
+        attemptDetails: String? = null,
     ) {
         container.logStore.add(
             RequestLog(
@@ -497,6 +520,7 @@ class ProxyEngine(private val container: AppContainer) {
                 attempts = attempts,
                 fallback = fallback,
                 error = error,
+                attemptDetails = attemptDetails,
             ),
         )
     }

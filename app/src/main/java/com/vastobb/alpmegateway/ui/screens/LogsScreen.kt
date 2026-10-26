@@ -53,6 +53,7 @@ import com.vastobb.alpmegateway.ui.components.StatusPill
 import com.vastobb.alpmegateway.ui.components.formatClock
 import com.vastobb.alpmegateway.ui.components.formatLatency
 import com.vastobb.alpmegateway.ui.components.statusColor
+import com.vastobb.alpmegateway.ui.theme.CodeTextStyle
 import com.vastobb.alpmegateway.ui.theme.LocalAlpmePalette
 
 private enum class LogFilter(val label: String) {
@@ -241,6 +242,20 @@ private fun LogCard(log: RequestLog) {
                             KeyValueRow("Attempts", log.attempts.toString())
                             Spacer(Modifier.height(6.dp))
                             KeyValueRow("Fallback", if (log.fallback) "Yes" else "No")
+                            if (!log.attemptDetails.isNullOrBlank()) {
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = "Attempt ladder",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = palette.textSecondary,
+                                )
+                                Spacer(Modifier.height(3.dp))
+                                Text(
+                                    text = log.attemptDetails,
+                                    style = CodeTextStyle,
+                                    color = palette.textPrimary,
+                                )
+                            }
                             if (!log.error.isNullOrBlank()) {
                                 Spacer(Modifier.height(8.dp))
                                 Text(
